@@ -7,19 +7,23 @@ function addToCart(userId, product, qty) {
   carts[userId].push({ product, qty });
 }
 
-function applyDiscount(total, rule) {
-  // rule comes from the admin page, e.g. "total * 0.9"
-  return eval(rule.replace('total', total));
+// percent comes from the admin page, e.g. 10 for 10% off
+function applyDiscount(total, percent) {
+  const value = Number(percent);
+  if (!Number.isFinite(value) || value < 0 || value > 100) {
+    throw new Error('Discount must be a percentage between 0 and 100');
+  }
+  return (total * (100 - value)) / 100;
 }
 
-function cartTotal(userId, discountRule) {
+function cartTotal(userId, discountPercent) {
   let total = 0;
   const items = carts[userId] || [];
   for (let i = 0; i < items.length; i++) {
     total = total + items[i].product.price * items[i].qty;
   }
-  if (discountRule) {
-    total = applyDiscount(total, discountRule);
+  if (discountPercent) {
+    total = applyDiscount(total, discountPercent);
   }
   return total;
 }
