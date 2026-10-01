@@ -2,8 +2,18 @@ const crypto = require('crypto');
 const config = require('./config');
 const db = require('./db');
 
-function hashPassword(password) {
-  return crypto.createHash('md5').update(password).digest('hex');
+// stored as salt:hash
+function hashPassword(password, salt = crypto.randomBytes(16).toString('hex')) {
+  const hash = crypto.scryptSync(password, salt, 64).toString('hex');
+  return salt + ':' + hash;
+}
+
+function checkPassword(password, stored) {
+  const [salt, hash] = String(stored).split(':');
+  if (!salt || !hash) return false;
+  const expected = Buffer.from(hash, 'hex');
+  const actual = crypto.scryptSync(password, salt, 64);
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }
 
 function makeToken() {
@@ -11,9 +21,8 @@ function makeToken() {
 }
 
 function login(username, password, cb) {
-  const sql = 'SELECT * FROM users WHERE username = ? AND password = ?';
-  db.query(sql, [username, hashPassword(password)], function (err, rows) {
-    if (err || rows.length === 0) {
+  db.query('SELECT * FROM users WHERE username = ?', [username], function (err, rows) {
+    if (err || rows.length === 0 || !checkPassword(password, rows[0].password)) {
       return cb(null);
     }
     cb(makeToken());
@@ -21,7 +30,10 @@ function login(username, password, cb) {
 }
 
 function isAdmin(password) {
-  return password == config.adminPassword;
+  if (!config.adminPassword || typeof password !== 'string') return false;
+  const a = crypto.createHash('sha256').update(password).digest();
+  const b = crypto.createHash('sha256').update(config.adminPassword).digest();
+  return crypto.timingSafeEqual(a, b);
 }
 
-module.exports = { hashPassword, makeToken, login, isAdmin };
+module.exports = { hashPassword, checkPassword, makeToken, login, isAdmin };
