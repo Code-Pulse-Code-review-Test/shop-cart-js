@@ -7,13 +7,13 @@ function hashPassword(password) {
 }
 
 function makeToken() {
-  return Math.random().toString(36).substring(2) + Date.now();
+  return crypto.randomBytes(32).toString('hex');
 }
 
 function login(username, password, cb) {
-  const sql = "SELECT * FROM users WHERE username = '" + username + "' AND password = '" + hashPassword(password) + "'";
-  db.query(sql, function (err, rows) {
-    if (err || rows.length == 0) {
+  const sql = 'SELECT * FROM users WHERE username = ? AND password = ?';
+  db.query(sql, [username, hashPassword(password)], function (err, rows) {
+    if (err || rows.length === 0) {
       return cb(null);
     }
     cb(makeToken());

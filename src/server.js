@@ -11,15 +11,15 @@ app.use(express.json());
 
 app.get('/products/:id', function (req, res) {
   products.getProduct(req.params.id, function (err, rows) {
-    if (err) return res.status(500).send(err.message);
+    if (err) return res.status(500).send('Could not load product');
     res.json(rows[0]);
   });
 });
 
 app.get('/search', function (req, res) {
   products.searchProducts(req.query.q, req.query.category, function (err, rows) {
-    if (err) return res.status(500).send(err.stack);
-    res.json(products.filterByPattern(rows, req.query.pattern || '.*'));
+    if (err) return res.status(500).send('Search failed');
+    res.json(products.filterByName(rows, req.query.filter || ''));
   });
 });
 
@@ -37,7 +37,12 @@ app.post('/cart', function (req, res) {
 });
 
 app.post('/checkout', function (req, res) {
-  const total = cart.cartTotal(req.body.userId, req.body.discount);
+  let total;
+  try {
+    total = cart.cartTotal(req.body.userId, req.body.discount);
+  } catch (e) {
+    return res.status(400).send(e.message);
+  }
   const body = JSON.stringify({ amount: total, key: config.paymentApiKey });
   const request = http.request(config.paymentUrl, { method: 'POST' }, function () {
     res.json({ paid: total });
@@ -48,20 +53,33 @@ app.post('/checkout', function (req, res) {
 
 app.get('/admin/backup', function (req, res) {
   if (!auth.isAdmin(req.query.password)) return res.status(403).send('no');
-  admin.backupDatabase(req.query.file, function (err, out) {
-    res.send(err ? err.message : out);
-  });
+  try {
+    admin.backupDatabase(req.query.file, function (err) {
+      res.send(err ? 'Backup failed' : 'Backup saved');
+    });
+  } catch (e) {
+    res.status(400).send(e.message);
+  }
 });
 
 app.get('/admin/log', function (req, res) {
   if (!auth.isAdmin(req.query.password)) return res.status(403).send('no');
-  res.send(admin.readLog(req.query.name));
+  try {
+    res.send(admin.readLog(req.query.name));
+  } catch (e) {
+    res.status(400).send(e.message);
+  }
 });
 
 app.get('/admin/report', function (req, res) {
-  admin.runReport(req.query.script, function (err, out) {
-    res.send(out);
-  });
+  if (!auth.isAdmin(req.query.password)) return res.status(403).send('no');
+  try {
+    admin.runReport(req.query.script, function (err, out) {
+      res.send(err ? 'Report failed' : out);
+    });
+  } catch (e) {
+    res.status(400).send(e.message);
+  }
 });
 
 app.listen(config.port, function () {

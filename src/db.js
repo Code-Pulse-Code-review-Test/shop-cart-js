@@ -7,8 +7,9 @@ const connection = mysql.createConnection({
   database: 'shop',
 });
 
-function query(sql, cb) {
-  connection.query(sql, cb);
+// params fill the ? placeholders, mysql escapes them
+function query(sql, params, cb) {
+  connection.query(sql, params, cb);
 }
 
 module.exports = { query };
