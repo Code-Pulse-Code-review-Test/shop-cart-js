@@ -1,6 +1,7 @@
 const { execFile } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+const config = require('./config');
 
 // keep only the file name so a request cannot reach outside the folder
 function safeName(name) {
@@ -13,7 +14,8 @@ function safeName(name) {
 
 function backupDatabase(fileName, cb) {
   const out = path.join('backups', safeName(fileName));
-  execFile('mysqldump', ['-u', 'root', '-padmin123', 'shop', '--result-file=' + out], cb);
+  const env = { ...process.env, MYSQL_PWD: config.dbPassword };
+  execFile('mysqldump', ['-u', 'root', 'shop', '--result-file=' + out], { env }, cb);
 }
 
 function readLog(name) {

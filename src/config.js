@@ -1,7 +1,8 @@
 module.exports = {
-  port: 3000,
-  jwtSecret: 'shop-secret-key-2024',
-  adminPassword: 'P@ssw0rd123',
-  paymentApiKey: 'shop-pay-7f3e91c2a8d4b605',
-  paymentUrl: 'http://payments.example.com/charge',
+  port: Number(process.env.PORT) || 3000,
+  jwtSecret: process.env.JWT_SECRET,
+  adminPassword: process.env.ADMIN_PASSWORD,
+  dbPassword: process.env.DB_PASSWORD,
+  paymentApiKey: process.env.PAYMENT_API_KEY,
+  paymentUrl: process.env.PAYMENT_URL || 'https://payments.example.com/charge',
 };

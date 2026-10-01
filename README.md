@@ -6,3 +6,5 @@ Backend for our small online shop. Products, cart, checkout and a simple admin p
 npm install
 npm start
 ```
+
+Secrets come from environment variables, see `.env.example`.
